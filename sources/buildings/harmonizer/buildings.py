@@ -1,7 +1,6 @@
 import json
 import os
-import tempfile
-from functools import partial
+
 import utils
 from neo4j import GraphDatabase
 import settings
@@ -49,13 +48,40 @@ def harmonize_buildings(data, **kwargs):
     with open("sources/buildings/harmonizer/temp.json", "w") as d_file:
         json.dump({"buildings": {"geojson": df_to_formatted_json(df_geometry, sep=".")}}, d_file)
 
+    # Load data
     g_rdflib = morph_kgc.materialize(morph_config.format(d_file=d_file.name))
-    os.unlink("sources/PostalCodes/harmonizer/temp.json")
+    os.unlink("sources/buildings/harmonizer/temp.json")
     neo = GraphDatabase.driver(**config['neo4j'])
     content = g_rdflib.serialize(format="ttl")
     content = content.replace('\\"', "&apos;")
     content = content.replace("'", "&apos;")
 
-    # with neo.session() as s:
-    #     response = s.run(f"""CALL n10s.rdf.import.inline('{content}','Turtle')""")
-    #     print(response.single())
+    with neo.session() as s:
+        response = s.run(f"""CALL n10s.rdf.import.inline('{content}','Turtle')""")
+        print(response.single())
+
+    # harmonize one building roof
+    morph_config = '\n[DataSource1]\nmappings:sources/buildings/harmonizer/mapping_building_physics.yaml\nfile_path: {d_file}\n'
+
+    data = json.load(open("data/buildings/montreal_buildings_H1K.geojson"))
+
+    with open("data/buildings/data.json", "w") as d_file:
+        json.dump({"buildings": {"geojson": data['features'][0]}}, d_file)
+
+    json_data = json.load(open("data/buildings/data.json"))
+    df_geometry = pd.json_normalize(json_data['buildings']['geojson'])
+
+    with open("sources/buildings/harmonizer/temp.json", "w") as d_file:
+        json.dump({"buildings": {"geojson": df_to_formatted_json(df_geometry, sep=".")}}, d_file)
+
+    # Load data
+    g_rdflib = morph_kgc.materialize(morph_config.format(d_file=d_file.name))
+    os.unlink("sources/buildings/harmonizer/temp.json")
+    neo = GraphDatabase.driver(**config['neo4j'])
+    content = g_rdflib.serialize(format="ttl")
+    content = content.replace('\\"', "&apos;")
+    content = content.replace("'", "&apos;")
+
+    with neo.session() as s:
+        response = s.run(f"""CALL n10s.rdf.import.inline('{content}','Turtle')""")
+        print(response.single())
