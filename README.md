@@ -12,3 +12,9 @@ The following links will provide information of each data source import tool:
 4. [Gas](sources/gas/README.md)
 
 #### To setup a database, follow [this steps](setup.md)
+
+## Authors
+- Jose Manuel Broto - jmbroto@cimne.upc.edu
+- Gerard Mor - gmor@cimne.upc.edu
+  
+Copyright (c) 2024 Jose Manuel Broto, Gerard Mor
